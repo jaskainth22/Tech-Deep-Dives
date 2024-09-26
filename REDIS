@@ -1,0 +1,86 @@
+Redis
+- Open source
+- In memory
+- Data structure store
+- Single threaded
+- USed as
+  - DB
+  - Cache
+  - Message broker
+  - Rate limiter
+
+Redis can be used as a traditional monolithic and as a distributed system as a cluster of nodes with sharding.
+
+Redis is extermely fast as it stores data on servrs main memory. Unline traditional databases which stores data on disk, it used the main memory and get/set operations take only ms.
+
+Can we consider REDIS as a source of truth????
+NOOOO, we cannot. If server crashes we wwill lose all the data that is stored in the main memory. REDIS is neither highly available nor consistent. 
+
+So what can we do to make REDIS persistent? In case of a server crash how can we get the data back?
+REDIS provides these options:
+1. RDB (Redis database) - Keep taking point in time snapshots of your dataset at specified intervals.
+2. AOF (Append only file) - logs every write operation recieved by the server, that will play again at server startup to reconstrcut the original dataset.
+3. RDB + AOF
+
+AOF is better as thewre is no chance of data loss, In case iof RDB we can lose data between the last snapshot time and the server crashed. 
+But RDB is faster, it is fast to reconstruct data via RDB, it is slow to reconstruct via AOF.
+
+
+Snapshotting:
+How REDIS takes snapshot? Every N minutues for M key changes REDIS takes snaphsot of the data. It forks itself,  creates a child process and that child process will keep writing the data and store it on disk.
+If the key changes are very high, we take snapshot very quickly, if key changes are less, we take snapshots slowly.
+
+AOF:
+We can keep log of each request, or we can keep log every sec.
+
+
+REDIS cannot guarantee consistency, as in each case there are chances we may lose data.
+
+
+What about Availability??????
+
+REDIS in monolithic cannot guarantee availablity as it is a single point of failure. 
+REDIS cluster provides a way to run REDIS installation where data is automatically sharded across multiple REDIS nodes. 
+REDIS clutser provides some level of availability even if some nodes are down, others can keep operating. 
+
+In REDIS clutser we have master slave configuration for each node. Each node have a master and a slave. In the slavee we have a REPLICA, so in case of disaster we can up that slavwe node.
+
+So in case of REDIS cluster does it offer strinf consistency?? NOOO, Bcz what if before writing to the slaves master nnode goes down. We will lose data in that case.
+
+SO we can make our REDIS clusters highly consistent, what we can do is for each write operation, we will store the data on slave also before replying back to client. But this will result in time increase, which will destroy the whole objective of REDIS.
+
+
+Partitioning is also very important in REDIS. BCZ main memory is limited on a computer, we need to use multiple machines to have large main memory.
+What that means is we need to split our data across multilpe machines.
+
+We can have different partition mechanisms. Clients itslef can send the request to right node, we can use a proxy that will redirect to right node, or we can send to any node and then its the nodes responsibilty to redirect.2
+
+
+
+1- Redis cluster with Masters of nodes
+
+Consider this setup of Redis Master and Sentinel. The larger box is one node. The smaller box can be considered one container. If the master process dies, the sentinel will detect that the process is dead. It will know that the master is down. However, it won’t be able to bring the service back up. so this setup is not fault-tolerant.
+
+2- The setup consists of two instances one master and one slave. If the master process dies, then the sentinels can detect it and promote the slave. This setup can tolerate master process failure. However, if the node running master dies, then both M1 and S1 will die. In this case, the remaining sentinel will not be able to perform a failover, since it requires a majority of the total sentinels to agree on the new master. This setup will not tolerate master node failure.
+
+3- The setup consists of three instances one master and two slave instances. Each of the instances is run on different nodes. If the master process dies, or if the master node dies, the majority vote can be done, and one of the slaves can be promoted to be the new master. This setup is tolerant to master process failure and master node failure but this setup can not guarantee fault tolerance in the case of one master and one slave node down.
+
+Finally, we have the following results:
+
+1- Redis is not consistent under any conditions and configuration.
+
+2- Redis is not a traditional database and we can not consider it the first source of truth if consistency is important
+
+3- Redis can offer good consistency under some configurations but will less performance/availability also consistency will not be the same offered by SQL DB so if you want transactional consistency Redis will not be the correct
+
+4- Redis offers automatic failover through clustering mode with failure detection
+
+5- Not all Redis models can guarantee the fault tolerance
+
+6- Redis clustering with sharding needs only if you want to guarantee high availability considering the data loss and complexity and you do not need this if your data is not bigger than the memory of one node.
+
+7- Always Read the disadvantages of technologies and techniques before using them.
+
+8- System design comes with trade-offs so you should think deeply because removing some components from your system might be very costly
+
+
